@@ -3,6 +3,7 @@
   ;; data structures for letrec-lang.
 
   (require "lang.scm")                  ; for expression?
+  
 
   (provide (all-defined-out))               ; too many things to list
 
@@ -46,6 +47,8 @@
       (eopl:error 'expval-extractors "Looking for a ~s, found ~s"
 	variant value)))
 
+  
+
 ;;;;;;;;;;;;;;;; procedures ;;;;;;;;;;;;;;;;
 
   ;; proc? : SchemeVal -> Bool
@@ -57,16 +60,23 @@
       (env environment?)))
 
   ;; Page: 86
+  
   (define-datatype environment environment?
     (empty-env)
     (extend-env 
       (bvar symbol?)
-      (bval expval?)
-      (saved-env environment?))
-    (extend-env-rec
-      (id symbol?)
-      (bvar symbol?)
-      (body expression?)
+      (bval (lambda (val)
+              (or (expval? val)
+                  (vector? val))))
       (saved-env environment?)))
 
+  
+  (define extend-env-rec
+    (lambda (p-name b-var body saved-env)
+      (let ((vec (make-vector 1)))
+        (let ((new-env (extend-env p-name vec saved-env)))
+          (vector-set! vec 0
+            (proc-val (procedure b-var body new-env)))
+          new-env))))
+  
 )
