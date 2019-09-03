@@ -3,9 +3,10 @@
   ;; data structures for letrec-lang.
 
   (require "lang.scm")                  ; for expression?
-  
 
-  (provide (all-defined-out))               ; too many things to list
+
+  
+  (provide (all-defined-out))           ; too many things to list
 
 ;;;;;;;;;;;;;;;; expressed values ;;;;;;;;;;;;;;;;
 
@@ -35,6 +36,7 @@
 	(bool-val (bool) bool)
 	(else (expval-extractor-error 'bool v)))))
 
+  
   ;; expval->proc : ExpVal -> Proc
   (define expval->proc
     (lambda (v)
@@ -46,8 +48,6 @@
     (lambda (variant value)
       (eopl:error 'expval-extractors "Looking for a ~s, found ~s"
 	variant value)))
-
-  
 
 ;;;;;;;;;;;;;;;; procedures ;;;;;;;;;;;;;;;;
 
@@ -64,19 +64,25 @@
   (define-datatype environment environment?
     (empty-env)
     (extend-env 
-      (bvar symbol?)
+      (bvar (list-of symbol?))
       (bval (lambda (val)
-              (or (expval? val)
+              (or ((list-of expval?) val)
                   (vector? val))))
       (saved-env environment?)))
 
-  
   (define extend-env-rec
-    (lambda (p-name b-var body saved-env)
-      (let ((vec (make-vector 1)))
-        (let ((new-env (extend-env p-name vec saved-env)))
-          (vector-set! vec 0
-            (proc-val (procedure b-var body new-env)))
-          new-env))))
+    (lambda (p-names b-vars p-bodys saved-env)
+      (let ((vec (make-vector (length p-names))))
+        (let ((new-env (extend-env p-names vec saved-env)))
+          (let loop ((index 0)
+                     (names p-names)
+                     (vars b-vars)
+                     (bodys p-bodys))
+            (if (null? names)
+                 new-env
+                (begin
+                  (vector-set! vec index
+                             (proc-val (procedure (car vars) (car bodys) new-env)))
+                 (loop (+ index 1) (cdr names) (cdr vars) (cdr bodys)))))))))
   
 )

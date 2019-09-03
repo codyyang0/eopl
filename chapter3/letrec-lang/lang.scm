@@ -5,6 +5,7 @@
   (require "drscheme-init.scm")
   
   (provide (all-defined-out))
+  
 
   ;;;;;;;;;;;;;;;; grammatical specification ;;;;;;;;;;;;;;;;
   
@@ -50,7 +51,7 @@
 
       (expression
         ("letrec"
-          identifier "(" identifier ")" "=" expression
+          (arbno identifier "(" identifier ")" "=" expression)
            "in" expression)
         letrec-exp)
       

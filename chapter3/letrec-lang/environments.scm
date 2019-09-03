@@ -1,12 +1,19 @@
 (module environments (lib "eopl.ss" "eopl") 
+
+
   
   ;; builds environment interface, using data structures defined in
   ;; data-structures.scm. 
 
   (require "data-structures.scm")
 
-  (provide (all-defined-out))
+
+
+
   
+  
+  (provide (all-defined-out))
+
 
 ;;;;;;;;;;;;;;;; initial environment ;;;;;;;;;;;;;;;;
   
@@ -19,26 +26,25 @@
 
   (define init-env 
     (lambda ()
-      (extend-env 
-       'i (num-val 1)
-       (extend-env
-        'v (num-val 5)
-        (extend-env
-         'x (num-val 10)
-         (empty-env))))))
+      (extend-env '(i v x) (list (num-val 1) (num-val 5) (num-val 10)) (empty-env))))
 
 ;;;;;;;;;;;;;;;; environment constructors and observers ;;;;;;;;;;;;;;;;
 
+  
   ;; Page: 86
   (define apply-env
     (lambda (env search-sym)
       (cases environment env
         (empty-env ()
           (eopl:error 'apply-env "No binding for ~s" search-sym))
-        (extend-env (var val saved-env)
-	  (if (eqv? search-sym var)
-            (if (not (vector? val))
-                val
-                (vector-ref val 0))
-	    (apply-env saved-env search-sym))))))
+        (extend-env (p-vars vals saved-env)
+          (let loop ((index 0)
+                     (vars p-vars))
+            (cond ((null? vars) (apply-env saved-env search-sym))
+                  ((eqv? search-sym (car vars))
+                   (if (not (vector? vals))
+                    (car vals)
+                    (vector-ref vals index)))
+                  (else
+                   (loop (+ index 1) (cdr vars)))))))))
   )

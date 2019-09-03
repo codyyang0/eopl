@@ -21,6 +21,8 @@
         (a-program (exp1)
           (value-of exp1 (init-env))))))
 
+  
+
   ;; value-of : Exp * Env -> ExpVal
   ;; Page: 83
   (define value-of
@@ -71,10 +73,10 @@
                 (arg (value-of rand env)))
             (apply-procedure proc arg)))
 
-        (letrec-exp (p-name b-var p-body letrec-body)
+        (letrec-exp (p-names b-vars p-bodys letrec-body)
           (value-of letrec-body
-            (extend-env-rec p-name b-var p-body env)))
-
+            (extend-env-rec p-names b-vars p-bodys env)))
+        
         )))
 
   ;; apply-procedure : Proc * ExpVal -> ExpVal
@@ -83,7 +85,7 @@
     (lambda (proc1 arg)
       (cases proc proc1
         (procedure (var body saved-env)
-          (value-of body (extend-env var arg saved-env))))))
+          (value-of body (extend-env (list var) (list arg) saved-env))))))
   
   )
   
