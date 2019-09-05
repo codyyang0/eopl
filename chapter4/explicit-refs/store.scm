@@ -18,8 +18,28 @@
 
   ;; empty-store : () -> Sto
   ;; Page: 111
+;  (define empty-store
+;    (lambda () '()))
   (define empty-store
-    (lambda () '()))
+    (lambda ()
+      (vector (make-vector 1024) 999)))
+  ; 使用多维数组来表示store
+  ; 第一个级别的size为1024，其中1-1000[0-999]存放expval
+  ; 第一个级别的1001->1012[1000-1011]存放第二级别的vector,第二级别每个vector存放1024个expval
+  ; 第一个级别的1013->1024[1011-1023]存放第三级别的vector
+  ; 第三级别的vector，每个都有256个slot，存放第二级别的vector
+
+  (define store->vec
+    (lambda (store)
+      (vector-ref store 0)))
+
+  (define store->ref
+    (lambda (store)
+      (vector-ref store 1)))
+
+  (define extend-vec
+    (lambda (vec path size)
+      (if (
   
   ;; initialize-store! : () -> Sto
   ;; usage: (initialize-store!) sets the-store to the empty-store
@@ -38,21 +58,37 @@
   ;; Page: 111
   (define reference?
     (lambda (v)
-      (integer? v)))
+      (and (integer? v)
+           (not (negative? v)))))
 
+  ; integer -> vector(1-position, 2-position, 3-position)
+  (define index
+    (lambda (position)      
+      (cond ((< position 1000) (vector position))
+            ((< position (+ 1000 (* 12 1024)))
+             (let* ((index-1 (quotient (- position 1000) 1024))
+                    (index-2 (- position (+ 1000 (* index-1 1024)))))
+               (vector (+ 1000 index-1) index-2)))
+            (else
+             (let* ((index-1 (quotient (- (- position 1000) (* 12 1024)) (* 256 1024)))
+                    (index-2 (quotient (- (- (- position 1000) (* 12 1024))
+                                       (* index-1 (* 256 1024))) 1024))
+                    (index-3 (- (- position 1000) (* 12 1024) (* index-1 (* 256 1024)) (* index-2 1024))))
+               (vector (+ 1012 index-1) index-2 index-3))))))
+  
   ;; newref : ExpVal -> Ref
   ;; Page: 111
   (define newref
-    (lambda (val)
-      (let ((next-ref (length the-store)))
-        (set! the-store
-              (append the-store (list val)))
-        (when (instrument-newref)
-            (eopl:printf 
-             "newref: allocating location ~s with initial contents ~s~%"
-             next-ref val))                     
-        next-ref)))                     
+    (lambda (val)      
+      (let* ((store (get-store))
+             (vec (car store))
+             (ref (+ (cdr store) 1))
+             (path (index ref))
+             (size (list 1024 256 1024)))
+        (if (
 
+          
+  
   ;; deref : Ref -> ExpVal
   ;; Page 111
   (define deref 
