@@ -26,7 +26,7 @@
   ; 使用多维数组来表示store
   ; 第一个级别的size为1024，其中1-1000[0-999]存放expval
   ; 第一个级别的1001->1012[1000-1011]存放第二级别的vector,第二级别每个vector存放1024个expval
-  ; 第一个级别的1013->1024[1011-1023]存放第三级别的vector
+  ; 第一个级别的1013->1024[1012-1023]存放第三级别的vector
   ; 第三级别的vector，每个都有256个slot，存放第二级别的vector
 
   (define store->vec
@@ -36,10 +36,20 @@
   (define store->ref
     (lambda (store)
       (vector-ref store 1)))
-
-  (define extend-vec
-    (lambda (vec path size)
-      (if (
+  
+;  (define extend-vec
+;    (lambda (vec path size)
+;      (let loop (index-)
+;                 (v vec)
+;                 (pre-index (vector-ref path 0))
+;                 (cur-index (vector-ref path 1)))
+;        (if (equal? i (vector-length path))
+;            (display "extend-vec was done")
+;            (if (zero? cur-index)
+;                (if (not (vector? (vector-ref v pre-index)))
+;                    (vector-set! v pre-index (make-vector (list-ref size (- i 1))))
+;                    (loop (+ i 1) (vector-ref v pre-index) (vector-ref path i) (vector-ref path (+ i 1))))
+;                (loop (+ i 1) (vector-ref v pre-index) (vector-ref path i) (vector-ref path (+ i 1))))))))
   
   ;; initialize-store! : () -> Sto
   ;; usage: (initialize-store!) sets the-store to the empty-store
@@ -61,20 +71,43 @@
       (and (integer? v)
            (not (negative? v)))))
 
-  ; integer -> vector(1-position, 2-position, 3-position)
+  (define level-1-buckets 1000)
+  (define level-2-buckets 12)
+  (define level-3-buckets 256)
+  (define slots 1024)
+
+  ; integer -> vector(slot-no)
+  ; integer -> vector(level-1-bucket-no, slot-no)
+  ; integer -> vector(level-1-bucket-no, level-2-bucket-no, slot-no)
   (define index
-    (lambda (position)      
-      (cond ((< position 1000) (vector position))
-            ((< position (+ 1000 (* 12 1024)))
-             (let* ((index-1 (quotient (- position 1000) 1024))
-                    (index-2 (- position (+ 1000 (* index-1 1024)))))
-               (vector (+ 1000 index-1) index-2)))
+    (lambda (references)      
+      (cond ((< references level-1-buckets) (vector references))
+            ((< references (+ level-1-buckets
+                              (* level-2-buckets slots)))
+             (let* ((bucket-no (quotient (- references level-1-buckets) slots))
+                    (slot-no   (modulo   (- references level-1-buckets) slots)))
+               (vector (+ level-1-buckets bucket-no) slot-no)))
             (else
-             (let* ((index-1 (quotient (- (- position 1000) (* 12 1024)) (* 256 1024)))
-                    (index-2 (quotient (- (- (- position 1000) (* 12 1024))
-                                       (* index-1 (* 256 1024))) 1024))
-                    (index-3 (- (- position 1000) (* 12 1024) (* index-1 (* 256 1024)) (* index-2 1024))))
-               (vector (+ 1012 index-1) index-2 index-3))))))
+             (let* ((level-1-bucket-no
+                     (quotient (- references
+                                  level-1-buckets
+                                  (* level-2-buckets slots))
+                               (* level-3-buckets slots)))
+                    (level-2-bucket-no
+                     (quotient (- references
+                                  level-1-buckets
+                                  (* level-2-buckets slots)
+                                  (* level-1-bucket-no level-3-buckets slots))
+                               slots))
+                    (slot-no
+                     (modulo (- references
+                                  level-1-buckets
+                                  (* level-2-buckets slots)
+                                  (* level-1-bucket-no level-3-buckets slots))
+                             slots)))
+               (vector (+ level-1-buckets level-2-buckets level-1-bucket-no)
+                       level-2-bucket-no
+                       slot-no))))))
   
   ;; newref : ExpVal -> Ref
   ;; Page: 111
@@ -85,8 +118,7 @@
              (ref (+ (cdr store) 1))
              (path (index ref))
              (size (list 1024 256 1024)))
-        (if (
-
+        '())))
           
   
   ;; deref : Ref -> ExpVal
