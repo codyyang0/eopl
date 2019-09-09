@@ -110,16 +110,16 @@
                    (vector-set! vec bucket-no val)))
                 ((equal? refer-vec-length 2)
                  (let ((level-1-bucket-no (vector-ref refer-vec 0))
-                       (level-2-bucket-no (vector-ref refer-vec 1)))
+                       (slot-no (vector-ref refer-vec 1)))
                    (begin 
                      (if (not (vector? (vector-ref vec level-1-bucket-no)))
                          (vector-set! vec level-1-bucket-no (make-vector slots))
                          (display "level-1-bucket need not extend"))
-                     (vector-set! (vector-ref vec level-1-bucket-no) level-2-bucket-no val))))
+                     (vector-set! (vector-ref vec level-1-bucket-no) slot-no val))))
                 ((equal? refer-vec-length 3)
                  (let ((level-1-bucket-no (vector-ref refer-vec 0))
                        (level-2-bucket-no (vector-ref refer-vec 1))
-                       (level-3-bucket-no (vector-ref refer-vec 2)))
+                       (slot-no (vector-ref refer-vec 2)))
                    (begin
                      (if (not (vector? (vector-ref vec level-1-bucket-no)))
                          (vector-set! vec level-1-bucket-no (make-vector level-3-buckets))
@@ -127,7 +127,7 @@
                      (if (not (vector? (vector-ref (vector-ref vec level-1-bucket-no) level-2-bucket-no)))
                          (vector-set! (vector-ref vec level-1-bucket-no) level-2-bucket-no (make-vector slots))
                          (display "level-2-bucket need not extend"))
-                     (vector-set! (vector-ref (vector-ref vec level-1-bucket-no) level-2-bucket-no) level-3-bucket-no val))))
+                     (vector-set! (vector-ref (vector-ref vec level-1-bucket-no) level-2-bucket-no) slot-no val))))
                 (else
                  (eopl:error "reference is wrong")))
           (vector-set! store 1 next-reference)
