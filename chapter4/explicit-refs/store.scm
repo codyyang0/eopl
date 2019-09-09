@@ -37,20 +37,6 @@
     (lambda (store)
       (vector-ref store 1)))
   
-;  (define extend-vec
-;    (lambda (vec path size)
-;      (let loop (index-)
-;                 (v vec)
-;                 (pre-index (vector-ref path 0))
-;                 (cur-index (vector-ref path 1)))
-;        (if (equal? i (vector-length path))
-;            (display "extend-vec was done")
-;            (if (zero? cur-index)
-;                (if (not (vector? (vector-ref v pre-index)))
-;                    (vector-set! v pre-index (make-vector (list-ref size (- i 1))))
-;                    (loop (+ i 1) (vector-ref v pre-index) (vector-ref path i) (vector-ref path (+ i 1))))
-;                (loop (+ i 1) (vector-ref v pre-index) (vector-ref path i) (vector-ref path (+ i 1))))))))
-  
   ;; initialize-store! : () -> Sto
   ;; usage: (initialize-store!) sets the-store to the empty-store
   ;; Page 111
@@ -114,40 +100,74 @@
   (define newref
     (lambda (val)      
       (let* ((store (get-store))
-             (vec (car store))
-             (ref (+ (cdr store) 1))
-             (path (index ref))
-             (size (list 1024 256 1024)))
-        '())))
+             (vec (store->vec store))
+             (next-reference (+ (store->ref store) 1))
+             (refer-vec (index next-reference))
+             (refer-vec-length (vector-length refer-vec)))
+        (begin
+          (cond ((equal? refer-vec-length 1)
+                 (let ((bucket-no (vector-ref refer-vec 0)))
+                   (vector-set! vec bucket-no val)))
+                ((equal? refer-vec-length 2)
+                 (let ((level-1-bucket-no (vector-ref refer-vec 0))
+                       (level-2-bucket-no (vector-ref refer-vec 1)))
+                   (begin 
+                     (if (not (vector? (vector-ref vec level-1-bucket-no)))
+                         (vector-set! vec level-1-bucket-no (make-vector slots))
+                         (display "level-1-bucket need not extend"))
+                     (vector-set! (vector-ref vec level-1-bucket-no) level-2-bucket-no val))))
+                ((equal? refer-vec-length 3)
+                 (let ((level-1-bucket-no (vector-ref refer-vec 0))
+                       (level-2-bucket-no (vector-ref refer-vec 1))
+                       (level-3-bucket-no (vector-ref refer-vec 2)))
+                   (begin
+                     (if (not (vector? (vector-ref vec level-1-bucket-no)))
+                         (vector-set! vec level-1-bucket-no (make-vector level-3-buckets))
+                         (display "level-1-bucket need not extend"))
+                     (if (not (vector? (vector-ref (vector-ref vec level-1-bucket-no) level-2-bucket-no)))
+                         (vector-set! (vector-ref vec level-1-bucket-no) level-2-bucket-no (make-vector slots))
+                         (display "level-2-bucket need not extend"))
+                     (vector-set! (vector-ref (vector-ref vec level-1-bucket-no) level-2-bucket-no) level-3-bucket-no val))))
+                (else
+                 (eopl:error "reference is wrong")))
+          (vector-set! store 1 next-reference)
+          next-reference))))
           
-  
   ;; deref : Ref -> ExpVal
   ;; Page 111
-  (define deref 
+  (define deref
     (lambda (ref)
-      (list-ref the-store ref)))
+      (let ((index-list (index ref)))
+        (let loop ((v (store->vec (get-store)))
+                   (index 0))
+          (if (not (vector? (vector-ref v (vector-ref index-list index))))
+              (vector-ref v (vector-ref index-list index))
+              (loop (vector-ref v (vector-ref index-list index)) (+ index 1)))))))
+      
 
   ;; setref! : Ref * ExpVal -> Unspecified
   ;; Page: 112
   (define setref!                       
     (lambda (ref val)
-      (set! the-store
-        (letrec
-          ((setref-inner
-             ;; returns a list like store1, except that position ref1
-             ;; contains val. 
-             (lambda (store1 ref1)
-               (cond
-                 ((null? store1)
-                  (report-invalid-reference ref the-store))
-                 ((zero? ref1)
-                  (cons val (cdr store1)))
-                 (else
-                   (cons
-                     (car store1)
-                     (setref-inner
-                       (cdr store1) (- ref1 1))))))))
-          (setref-inner the-store ref)))))
+      (let ((store-ref (store->ref (get-store)))
+            (store-vec (store->vec (get-store))))
+        (if (> ref store-ref)
+            (begin
+              (display "wrong reference no")
+              (newline))
+            (let* ((index-vec (index ref))
+                  (refer-vec-length (vector-length index-vec)))
+               (cond ((equal? refer-vec-length 1) (vector-set! store-vec ref val))
+                     ((equal? refer-vec-length 2) (vector-set!
+                                                   (vector-ref store-vec (vector-ref index-vec 0))
+                                                   (vector-ref index-vec 1)
+                                                   val))
+                     (else
+                      (vector-set!
+                       (vector-ref (vector-ref store-vec (vector-ref index-vec 0)) (vector-ref index-vec 1))
+                       (vector-ref index-vec 2)
+                       val))))))))
+                    
 
   (define report-invalid-reference
     (lambda (ref the-store)
