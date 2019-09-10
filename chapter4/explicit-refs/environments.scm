@@ -1,6 +1,7 @@
 (module environments (lib "eopl.ss" "eopl") 
   
   (require "data-structures.scm")
+  (require "store.scm")
   (provide init-env empty-env extend-env apply-env)
 
 ;;;;;;;;;;;;;;;; initial environment ;;;;;;;;;;;;;;;;
@@ -15,11 +16,11 @@
   (define init-env 
     (lambda ()
       (extend-env 
-       'i (num-val 1)
+       'i (newref (num-val 1))
        (extend-env
-        'v (num-val 5)
+        'v (newref (num-val 5))
         (extend-env
-         'x (num-val 10)
+         'x (newref (num-val 10))
          (empty-env))))))
 
 ;;;;;;;;;;;;;;;; environment constructors and observers ;;;;;;;;;;;;;;;;

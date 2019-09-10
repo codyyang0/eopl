@@ -8,6 +8,7 @@
   (require "data-structures.scm")
   (require "environments.scm")
   (require "store.scm")
+  (require "answer.scm")
   
   (provide value-of-program value-of instrument-let instrument-newref)
 
@@ -24,55 +25,64 @@
   ;; Page: 110
   (define value-of-program 
     (lambda (pgm)
-      (initialize-store!)               ; new for explicit refs.
+      (initialize-store!)
       (cases program pgm
         (a-program (exp1)
-          (value-of exp1 (init-env))))))
-
-  ;; value-of : Exp * Env -> ExpVal
+          (value-of exp1 (init-env) (get-store))))))
+  
+  ;; value-of : Exp * Env * Store -> Answer
   ;; Page: 113
   (define value-of
-    (lambda (exp env)
+    (lambda (exp env store)
       (cases expression exp
 
         ;\commentbox{ (value-of (const-exp \n{}) \r) = \n{}}
-        (const-exp (num) (num-val num))
+        (const-exp (num)
+          (an-answer (num-val num) store))
 
         ;\commentbox{ (value-of (var-exp \x{}) \r) = (apply-env \r \x{})}
-        (var-exp (var) (apply-env env var))
+        (var-exp (var)
+          (an-answer
+           (apply-store store (apply-env env var))
+           store))
 
         ;\commentbox{\diffspec}
         (diff-exp (exp1 exp2)
-          (let ((val1 (value-of exp1 env))
-                (val2 (value-of exp2 env)))
-            (let ((num1 (expval->num val1))
-                  (num2 (expval->num val2)))
-              (num-val
-                (- num1 num2)))))
+          (cases answer (value-of exp1 env store)
+            (an-answer (v1 new-store1)
+              (cases answer (value-of exp2 env new-store1)
+                (an-answer (v2 new-store2)
+                  (let ((num1 (expval->num v1))
+                        (num2 (expval->num v2)))
+                    (an-answer (num-val (- num1 num2)) new-store2)))))))
       
         ;\commentbox{\zerotestspec}
         (zero?-exp (exp1)
-          (let ((val1 (value-of exp1 env)))
-            (let ((num1 (expval->num val1)))
-              (if (zero? num1)
-                (bool-val #t)
-                (bool-val #f)))))
+          (cases answer (value-of exp1 env store)
+            (an-answer (v1 new-store)
+              (let ((num1 (expval->num v1)))
+                (if (zero? num1)
+                    (an-answer (bool-val #t) new-store)
+                    (an-answer (bool-val #f) new-store))))))
               
         ;\commentbox{\ma{\theifspec}}
         (if-exp (exp1 exp2 exp3)
-          (let ((val1 (value-of exp1 env)))
-            (if (expval->bool val1)
-              (value-of exp2 env)
-              (value-of exp3 env))))
+          (cases answer (value-of exp1 env store)
+            (an-answer (val new-store)
+              (if (expval->bool val)
+                  (value-of exp2 env new-store)
+                  (value-of exp3 env new-store)))))
 
         ;\commentbox{\ma{\theletspecsplit}}
-        (let-exp (var exp1 body)       
-          (let ((val1 (value-of exp1 env)))
-            (value-of body
-              (extend-env var val1 env))))
+        (let-exp (var exp1 body)
+          (cases answer (value-of exp1 env store)
+            (an-answer (v1 new-store1)
+              (let* ((new-store2 (extend-store new-store1 v1))
+                     (ref (store->ref new-store2)))
+                (value-of body (extend-env ref env) new-store2)))))
         
         (proc-exp (var body)
-          (proc-val (procedure var body env)))
+          (proc-val (procedure var body env store)))
 
         (call-exp (rator rand)
           (let ((proc (expval->proc (value-of rator env)))
@@ -110,9 +120,10 @@
             (ref-val (newref v1))))
 
         (deref-exp (exp1)
-          (let ((v1 (value-of exp1 env)))
-            (let ((ref1 (expval->ref v1)))
-              (deref ref1))))
+          (cases answer (value-of exp1 env store)
+            (an-answer (v1 new-store)
+              (let ((ref1 (expval->ref v1)))
+                (an-answer (deref ref1) new-store)))))
 
         (setref-exp (exp1 exp2)
           (let ((ref (expval->ref (value-of exp1 env))))
@@ -135,7 +146,7 @@
   (define apply-procedure
     (lambda (proc1 arg)
       (cases proc proc1
-        (procedure (var body saved-env)
+        (procedure (var body saved-env store)
 	  (let ((r arg))
 	    (let ((new-env (extend-env var r saved-env)))
 	      (when (instrument-let)

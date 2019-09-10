@@ -58,13 +58,14 @@
     (procedure
       (bvar symbol?)
       (body expression?)
-      (env environment?)))
+      (env environment?)
+      (store store?)))
   
   (define-datatype environment environment?
     (empty-env)
     (extend-env 
       (bvar symbol?)
-      (bval expval?)
+      (bval reference?)
       (saved-env environment?))
     (extend-env-rec*
       (proc-names (list-of symbol?))

@@ -2,8 +2,8 @@
   
   (require "drscheme-init.scm")
    
-  (provide initialize-store! reference? newref deref setref!
-    instrument-newref get-store-as-list)
+  (provide (all-defined-out))
+  
   
   (define instrument-newref (make-parameter #f))
   
@@ -15,6 +15,11 @@
   ;; the-store: a Scheme variable containing the current state of the
   ;; store.  Initially set to a dummy variable.
   (define the-store 'uninitialized)
+
+  ; 使用地址相同的判断
+  (define store?
+    (lambda (store)
+      (equal? store (get-store))))
 
   ;; empty-store : () -> Sto
   ;; Page: 111
@@ -167,7 +172,22 @@
                        (vector-ref (vector-ref store-vec (vector-ref index-vec 0)) (vector-ref index-vec 1))
                        (vector-ref index-vec 2)
                        val))))))))
-                    
+
+  ;; apply-store: Store * Reference -> ExpVal
+  (define apply-store
+    (lambda (store ref)
+      (if (not (store? store))
+          (eopl:error "Wrong Store")
+          (deref ref))))
+
+  ;; extend-store: Store * ExpVal -> Store
+  (define extend-store
+    (lambda (store val)
+      (if (not (store? store))
+          (eopl:error "Wrong Store")
+          (begin
+            (newref val)
+            (get-store)))))
 
   (define report-invalid-reference
     (lambda (ref the-store)
