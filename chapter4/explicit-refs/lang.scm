@@ -61,6 +61,10 @@
         begin-exp)
 
       (expression
+       ("list" "(" expression (arbno "," expression) ")")
+       list-exp)
+
+      (expression
         ("newref" "(" expression ")")
         newref-exp)
 
