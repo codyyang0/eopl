@@ -9,7 +9,6 @@
   (require "environments.scm")
   (require "store.scm")
   
-  
   (provide value-of-program value-of instrument-let instrument-newref)
 
 ;;;;;;;;;;;;;;;; switches for instrument-let ;;;;;;;;;;;;;;;;
@@ -40,7 +39,11 @@
 
         ;\commentbox{ (value-of (var-exp \x{}) \r) 
         ;              = (deref (apply-env \r \x{}))}
-        (var-exp (var) (deref (apply-env env var)))
+        (var-exp (var)
+          (let ((val (apply-env env var)))
+            (if (expval? val)
+                val
+                (deref val))))
 
         ;\commentbox{\diffspec}
         (diff-exp (exp1 exp2)
@@ -67,10 +70,15 @@
               (value-of exp3 env))))
 
         ;\commentbox{\ma{\theletspecsplit}}
-        (let-exp (var exp1 body)       
+        (letmutable-exp (var exp1 body)       
           (let ((v1 (value-of exp1 env)))
             (value-of body
               (extend-env var (newref v1) env))))
+
+        (let-exp (var exp1 body)
+          (let ((v1 (value-of exp1 env)))
+            (value-of body
+              (extend-env var v1 env))))
         
         (proc-exp (var body)
           (proc-val (procedure var body env)))

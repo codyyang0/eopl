@@ -2,7 +2,7 @@
 
   (require "lang.scm")                  ; for expression?
   (require "store.scm")                 ; for reference?
-  (provide (all-defined-out))               ; too many things to list
+  (provide (all-defined-out))           ; too many things to list
 
 ;;;;;;;;;;;;;;;; expressed values ;;;;;;;;;;;;;;;;
 
@@ -68,7 +68,8 @@
                   (list-of var))))
       (bval (lambda (val)
               (or (reference? val)
-                  (vector? val))))
+                  (vector? val)
+                  (expval? val))))
       (saved-env environment?)))
 
   (define extend-env-rec*

@@ -38,7 +38,11 @@
 
       (expression
        ("let" identifier "=" expression "in" expression)
-       let-exp)   
+       let-exp)
+
+      (expression
+       ("letmutable" identifier "=" expression "in" expression)
+       letmutable-exp)
 
       (expression
        ("proc" "(" identifier ")" expression)
@@ -63,7 +67,6 @@
       (expression
         ("set" identifier "=" expression)
         assign-exp)
-
       ))
 
   ;;;;;;;;;;;;;;;; sllgen boilerplate ;;;;;;;;;;;;;;;;
