@@ -79,15 +79,19 @@
             (an-answer (v1 new-store1)
               (let* ((new-store2 (extend-store new-store1 v1))
                      (ref (store->ref new-store2)))
-                (value-of body (extend-env ref env) new-store2)))))
+                (value-of body (extend-env var ref env) new-store2)))))
         
         (proc-exp (var body)
-          (proc-val (procedure var body env store)))
+          (an-answer (proc-val (procedure var body env)) store))
 
         (call-exp (rator rand)
-          (let ((proc (expval->proc (value-of rator env)))
-                (arg (value-of rand env)))
-            (apply-procedure proc arg)))
+          (cases answer (value-of rator env store)
+            (an-answer (val new-store1)
+              (let ((proc (expval->proc val)))
+                (cases answer (value-of rand env store)
+                  (an-answer (val new-store2)
+                    (let ((arg val))
+                      (apply-procedure proc arg))))))))
 
         (letrec-exp (p-names b-vars p-bodies letrec-body)
           (value-of letrec-body
@@ -97,27 +101,28 @@
           (letrec 
             ((value-of-begins
                (lambda (e1 es)
-                 (let ((v1 (value-of e1 env)))
+                 (let ((answer1 (value-of e1 env store)))
                    (if (null? es)
-                     v1
+                     answer1
                      (value-of-begins (car es) (cdr es)))))))
             (value-of-begins exp1 exps)))
 
         (list-exp (exp1 exps)
-          (let ((val (ref-val (newref (value-of exp1 env)))))
+          (let ((answer (an-answer (ref-val (newref (value-of exp1 env))) store)))
             (letrec
                 ((value-of-lists
                   (lambda (es)
                     (if (null? es)
-                        val
+                        answer
                         (begin
-                          (newref (value-of (car es) env))
+                          (an-answer (ref-val (newref (value-of (car es) env))) store)
                           (value-of-lists (cdr es)))))))
               (value-of-lists exps))))
 
         (newref-exp (exp1)
-          (let ((v1 (value-of exp1 env)))
-            (ref-val (newref v1))))
+          (cases answer (value-of exp1 env store)
+            (an-answer (val new-store)
+              (an-answer (ref-val (newref val)) new-store))))
 
         (deref-exp (exp1)
           (cases answer (value-of exp1 env store)
@@ -126,11 +131,13 @@
                 (an-answer (deref ref1) new-store)))))
 
         (setref-exp (exp1 exp2)
-          (let ((ref (expval->ref (value-of exp1 env))))
-            (let ((v2 (value-of exp2 env)))
-              (begin
-                (setref! ref v2)
-                (num-val 23)))))
+          (cases answer (value-of exp1 env store)
+            (an-answer (v1 new-store)
+              (let ((ref (expval->ref v1)))
+                (cases answer (value-of exp2 env store)
+                  (an-answer (v2 new-store)
+                    (setref! ref v2)
+                    (an-answer (num-val 23) new-store)))))))
         )))
 
   ;; apply-procedure : Proc * ExpVal -> ExpVal
@@ -146,9 +153,9 @@
   (define apply-procedure
     (lambda (proc1 arg)
       (cases proc proc1
-        (procedure (var body saved-env store)
+        (procedure (var body saved-env)
 	  (let ((r arg))
-	    (let ((new-env (extend-env var r saved-env)))
+	    (let ((new-env (extend-env var (newref r) saved-env)))
 	      (when (instrument-let)
 		(begin
 		  (eopl:printf
@@ -158,7 +165,7 @@
                   (eopl:printf "store =~%")
                   (pretty-print (store->readable (get-store-as-list)))
                   (eopl:printf "~%")))
-              (value-of body new-env)))))))
+              (value-of body new-env (get-store))))))))
 
 
   ;; store->readable : Listof(List(Ref,Expval)) 

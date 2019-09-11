@@ -27,7 +27,7 @@
 ;    (lambda () '()))
   (define empty-store
     (lambda ()
-      (vector (make-vector 1024) 999)))
+      (vector (make-vector 1024) -1)))
   ; 使用多维数组来表示store
   ; 第一个级别的size为1024，其中1-1000[0-999]存放expval
   ; 第一个级别的1001->1012[1000-1011]存放第二级别的vector,第二级别每个vector存放1024个expval
@@ -176,18 +176,14 @@
   ;; apply-store: Store * Reference -> ExpVal
   (define apply-store
     (lambda (store ref)
-      (if (not (store? store))
-          (eopl:error "Wrong Store")
-          (deref ref))))
+      (deref ref)))
 
   ;; extend-store: Store * ExpVal -> Store
   (define extend-store
     (lambda (store val)
-      (if (not (store? store))
-          (eopl:error "Wrong Store")
-          (begin
-            (newref val)
-            (get-store)))))
+      (begin
+        (newref val)
+        (get-store))))
 
   (define report-invalid-reference
     (lambda (ref the-store)

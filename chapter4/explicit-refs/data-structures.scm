@@ -58,8 +58,7 @@
     (procedure
       (bvar symbol?)
       (body expression?)
-      (env environment?)
-      (store store?)))
+      (env environment?)))
   
   (define-datatype environment environment?
     (empty-env)
