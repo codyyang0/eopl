@@ -2,7 +2,6 @@
 
   (require "lang.scm")                  ; for expression?
   (require "store.scm")                 ; for reference?
-
   (provide (all-defined-out))               ; too many things to list
 
 ;;;;;;;;;;;;;;;; expressed values ;;;;;;;;;;;;;;;;
@@ -52,6 +51,7 @@
       (eopl:error 'expval-extractors "Looking for a ~s, found ~s"
 	variant value)))
 
+  
 ;;;;;;;;;;;;;;;; procedures ;;;;;;;;;;;;;;;;
 
   (define-datatype proc proc?
@@ -63,15 +63,30 @@
   (define-datatype environment environment?
     (empty-env)
     (extend-env 
-      (bvar symbol?)
-      (bval reference?)                 ; new for implicit-refs
-      (saved-env environment?))
-    (extend-env-rec*
-      (proc-names (list-of symbol?))
-      (b-vars (list-of symbol?))
-      (proc-bodies (list-of expression?))
+      (bvar (lambda (var)
+              (or (symbol? var)
+                  (list-of var))))
+      (bval (lambda (val)
+              (or (reference? val)
+                  (vector? val))))
       (saved-env environment?)))
 
+  (define extend-env-rec*
+    (lambda (proc-names b-vars proc-bodies saved-env)
+      (let ((vec-length (length proc-names)))
+        (let ((vec (make-vector vec-length)))
+          (let ((new-env (extend-env proc-names vec saved-env)))
+            (letrec ((init-vec
+                      (lambda (i)
+                        (if (< i vec-length)
+                            (vector-set!
+                             vec i
+                             (newref
+                              (proc-val (procedure (list-ref b-vars i) (list-ref proc-bodies i) new-env))))
+                            (init-vec (+ i 1))))))
+              (init-vec 0)
+              new-env))))))
+  
   ;; env->list : Env -> List
   ;; used for pretty-printing and debugging
   (define env->list
@@ -82,10 +97,6 @@
 	  (cons
 	    (list sym val)              ; val is a denoted value-- a
                                         ; reference. 
-	    (env->list saved-env)))
-	(extend-env-rec* (p-names b-vars p-bodies saved-env)
-	  (cons
-	    (list 'letrec p-names '...)
 	    (env->list saved-env))))))
 
   ;; expval->printable : ExpVal -> List

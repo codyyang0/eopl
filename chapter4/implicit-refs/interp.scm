@@ -9,6 +9,7 @@
   (require "environments.scm")
   (require "store.scm")
   
+  
   (provide value-of-program value-of instrument-let instrument-newref)
 
 ;;;;;;;;;;;;;;;; switches for instrument-let ;;;;;;;;;;;;;;;;
@@ -75,14 +76,14 @@
           (proc-val (procedure var body env)))
 
         (call-exp (rator rand)
-          (let ((proc (expval->proc (value-of rator env)))
-                (arg (value-of rand env)))
-            (apply-procedure proc arg)))
-
+            (let ((proc (expval->proc (value-of rator env)))
+                  (arg (value-of rand env)))
+              (apply-procedure proc arg)))
+        
         (letrec-exp (p-names b-vars p-bodies letrec-body)
           (value-of letrec-body
             (extend-env-rec* p-names b-vars p-bodies env)))
-
+        
         (begin-exp (exp1 exps)
           (letrec 
             ((value-of-begins
