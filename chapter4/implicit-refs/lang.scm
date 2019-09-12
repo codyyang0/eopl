@@ -6,6 +6,7 @@
   
   (provide (all-defined-out))
 
+  
   ;;;;;;;;;;;;;;;; grammatical specification ;;;;;;;;;;;;;;;;
   
   (define the-lexical-spec
@@ -19,9 +20,34 @@
       ))
   
   (define the-grammar
-    '((program (expression) a-program)
-
+    '((program (statement) a-program)
+      
+      (statement
+       (identifier "=" expression)
+       assign-statement)
+      
+      (statement
+       ("print" expression)
+       print-statement)
+      
+      (statement
+       ("{" (arbno statement ";") "}")
+       block-statement)
+      
+      (statement
+       ("if" expression statement statement)
+       if-statement)
+      
+      (statement
+       ("while" expression statement)
+       while-statement)
+      
+      (statement
+       ("var" (separated-list identifier ",") ";" statement)
+       var-statement)
+      
       (expression (number) const-exp)
+      
       (expression
         ("-" "(" expression "," expression ")")
         diff-exp)

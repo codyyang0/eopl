@@ -18,6 +18,29 @@
   ;; say (instrument-let #t) to turn instrumentation on.
   ;;     (instrument-let #f) to turn it off again.
 
+
+;;;;;;;;;;;;;;;; result of program ;;;;;;;;;;;;;;
+; A program is a statement. A statement does not return a value, but acts
+; by modifying the store and by printing.
+
+(define result-of-program
+  (lambda (pgm)
+    (initialize-store!)
+    (cases program pgm
+      (a-program (stmt1)
+         (result-of stmt1 (init-env) (get-store))))))
+
+
+(define result-of
+  (lambda (stmt env store)
+    (cases statement stmt
+      (assign-statement (var exp)
+        (set! env (extend-env var
+                    (newref store (value-of exp env))
+                    env)))
+      (else "")))))
+
+
 ;;;;;;;;;;;;;;;; the interpreter ;;;;;;;;;;;;;;;;
 
   ;; value-of-program : Program -> ExpVal

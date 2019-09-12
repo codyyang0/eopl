@@ -3,7 +3,7 @@
   (require "drscheme-init.scm")
   
   (provide initialize-store! reference? newref deref setref!
-    instrument-newref get-store-as-list)
+    instrument-newref get-store-as-list get-store)
   
   (define instrument-newref (make-parameter #f))
   
@@ -43,10 +43,10 @@
   ;; newref : ExpVal -> Ref
   ;; Page: 111
   (define newref
-    (lambda (val)
-      (let ((next-ref (length the-store)))
-        (set! the-store
-              (append the-store (list val)))
+    (lambda (store val)
+      (let ((next-ref (length store)))
+        (set! store
+              (append store (list val)))
         (when (instrument-newref)
             (eopl:printf 
              "newref: allocating location ~s with initial contents ~s~%"
@@ -56,14 +56,14 @@
   ;; deref : Ref -> ExpVal
   ;; Page 111
   (define deref 
-    (lambda (ref)
-      (list-ref the-store ref)))
+    (lambda (store ref)
+      (list-ref store ref)))
 
   ;; setref! : Ref * ExpVal -> Unspecified
   ;; Page: 112
   (define setref!                       
-    (lambda (ref val)
-      (set! the-store
+    (lambda (store ref val)
+      (set! store
         (letrec
           ((setref-inner
              ;; returns a list like store1, except that position ref1
@@ -71,7 +71,7 @@
              (lambda (store1 ref1)
                (cond
                  ((null? store1)
-                  (report-invalid-reference ref the-store))
+                  (report-invalid-reference ref store))
                  ((zero? ref1)
                   (cons val (cdr store1)))
                  (else
@@ -79,7 +79,7 @@
                      (car store1)
                      (setref-inner
                        (cdr store1) (- ref1 1))))))))
-          (setref-inner the-store ref)))))
+          (setref-inner store ref)))))
 
   (define report-invalid-reference
     (lambda (ref the-store)
