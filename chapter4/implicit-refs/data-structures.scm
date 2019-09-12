@@ -68,8 +68,7 @@
                   (list-of var))))
       (bval (lambda (val)
               (or (reference? val)
-                  (vector? val)
-                  (expval? val))))
+                  (vector? val))))
       (saved-env environment?)))
 
   (define extend-env-rec*

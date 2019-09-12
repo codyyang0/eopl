@@ -47,10 +47,14 @@
 
         ;\commentbox{\diffspec}
         (diff-exp (exp1 exp2)
-          (let ((val1 (value-of exp1 env))
-                (val2 (value-of exp2 env)))
+          (let ((val2 (value-of exp2 env))
+                (val1 (value-of exp1 env)))
             (let ((num1 (expval->num val1))
                   (num2 (expval->num val2)))
+              (newline)
+              (display "diff-exp")
+              (newline)
+              (display env)
               (num-val
                 (- num1 num2)))))
 
@@ -70,15 +74,15 @@
               (value-of exp3 env))))
 
         ;\commentbox{\ma{\theletspecsplit}}
-        (letmutable-exp (var exp1 body)       
+        (let-exp (var exp1 body)       
           (let ((v1 (value-of exp1 env)))
             (value-of body
               (extend-env var (newref v1) env))))
 
-        (let-exp (var exp1 body)
-          (let ((v1 (value-of exp1 env)))
-            (value-of body
-              (extend-env var v1 env))))
+;        (let-exp (var exp1 body)
+;          (let ((v1 (value-of exp1 env)))
+;            (value-of body
+;              (extend-env var v1 env))))
         
         (proc-exp (var body)
           (proc-val (procedure var body env)))
@@ -86,6 +90,9 @@
         (call-exp (rator rand)
             (let ((proc (expval->proc (value-of rator env)))
                   (arg (value-of rand env)))
+              (newline)
+              (eopl:printf "call-exp ~s ~%" arg)
+              (display env)
               (apply-procedure proc arg)))
         
         (letrec-exp (p-names b-vars p-bodies letrec-body)
@@ -109,8 +116,24 @@
               (value-of exp1 env))
             (num-val 27)))
 
+        ; mutable variable
+        ; 满足exercise 4.21
+        ; The effect of the setdynamic expression is to assign temporarily the value of exp1 to
+        ; var, evaluate body, reassign var to its original value, and return the value of body.
+        ; 这个只是修改了当前环境中，最近的变量在store中的值，无法穿透值函数中定义是闭包中的同名变量值
+        ; 除非闭包中的环境与当前的环境均是同一个
+        (setdynamic-exp (var exp1 body)
+          (let* ((ref (apply-env env var))
+                 (origin-val (deref ref)))
+            (newline)
+            (eopl:printf "old val for ~s : ~s ~%" var origin-val)
+            (setref! ref (value-of exp1 env))
+            (let ((val (value-of body env)))
+              (setref! ref origin-val)
+              (newline)
+              (eopl:printf "return val: ~s ~%" val)
+              val)))
         )))
-
 
   ;; apply-procedure : Proc * ExpVal -> ExpVal
   ;; Page: 119

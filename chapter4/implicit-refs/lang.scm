@@ -40,9 +40,9 @@
        ("let" identifier "=" expression "in" expression)
        let-exp)
 
-      (expression
-       ("letmutable" identifier "=" expression "in" expression)
-       letmutable-exp)
+;      (expression
+;       ("letmutable" identifier "=" expression "in" expression)
+;       letmutable-exp)
 
       (expression
        ("proc" "(" identifier ")" expression)
@@ -67,6 +67,11 @@
       (expression
         ("set" identifier "=" expression)
         assign-exp)
+
+      (expression
+       ("setdynamic" identifier "=" expression "during" expression)
+       setdynamic-exp)
+      
       ))
 
   ;;;;;;;;;;;;;;;; sllgen boilerplate ;;;;;;;;;;;;;;;;
