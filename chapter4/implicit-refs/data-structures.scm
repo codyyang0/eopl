@@ -4,6 +4,7 @@
   (require "store.scm")                 ; for reference?
   (provide (all-defined-out))           ; too many things to list
 
+  
 ;;;;;;;;;;;;;;;; expressed values ;;;;;;;;;;;;;;;;
 
 ;;; an expressed value is either a number, a boolean, a procval, or a
@@ -72,7 +73,7 @@
       (saved-env environment?)))
 
   (define extend-env-rec*
-    (lambda (proc-names b-vars proc-bodies saved-env)
+    (lambda (proc-names b-vars proc-bodies saved-env store)
       (let ((vec-length (length proc-names)))
         (let ((vec (make-vector vec-length)))
           (let ((new-env (extend-env proc-names vec saved-env)))
@@ -82,7 +83,7 @@
                             (vector-set!
                              vec i
                              (newref
-                              (proc-val (procedure (list-ref b-vars i) (list-ref proc-bodies i) new-env))))
+                              store (proc-val (procedure (list-ref b-vars i) (list-ref proc-bodies i) new-env))))
                             (init-vec (+ i 1))))))
               (init-vec 0)
               new-env))))))

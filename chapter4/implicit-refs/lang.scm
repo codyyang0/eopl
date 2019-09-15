@@ -5,7 +5,6 @@
   (require "drscheme-init.scm")
   
   (provide (all-defined-out))
-
   
   ;;;;;;;;;;;;;;;; grammatical specification ;;;;;;;;;;;;;;;;
   
@@ -17,6 +16,7 @@
        symbol)
       (number (digit (arbno digit)) number)
       (number ("-" digit (arbno digit)) number)
+      (com-opers ((or "+" "-" "*" "/")) string)
       ))
   
   (define the-grammar
@@ -31,7 +31,7 @@
        print-statement)
       
       (statement
-       ("{" (arbno statement ";") "}")
+       ("{" (separated-list statement ";") "}")
        block-statement)
       
       (statement
@@ -44,13 +44,13 @@
       
       (statement
        ("var" (separated-list identifier ",") ";" statement)
-       var-statement)
+       vars-statement)
       
       (expression (number) const-exp)
       
       (expression
-        ("-" "(" expression "," expression ")")
-        diff-exp)
+        (com-opers "(" expression "," expression ")")
+        oper-exp)
       
       (expression
        ("zero?" "(" expression ")")

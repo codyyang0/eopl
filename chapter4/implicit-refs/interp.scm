@@ -8,8 +8,10 @@
   (require "data-structures.scm")
   (require "environments.scm")
   (require "store.scm")
+
   
-  (provide value-of-program value-of instrument-let instrument-newref)
+  ;(provide value-of-program value-of instrument-let instrument-newref)
+  (provide (all-defined-out))
 
 ;;;;;;;;;;;;;;;; switches for instrument-let ;;;;;;;;;;;;;;;;
 
@@ -28,33 +30,68 @@
     (initialize-store!)
     (cases program pgm
       (a-program (stmt1)
-         (result-of stmt1 (init-env) (get-store))))))
+         (result-of stmt1 (init-env (get-store)) (get-store))))))
 
 
 (define result-of
   (lambda (stmt env store)
     (cases statement stmt
-      (assign-statement (var exp)
-        (set! env (extend-env var
-                    (newref store (value-of exp env))
-                    env)))
-      (else "")))))
+      
+      (assign-statement (var exp1)
+        (begin
+          (setref!
+           store
+           (apply-env env var)
+           (value-of exp1 env store))))
+      
+      (print-statement (exp1)
+        (let ((val (value-of exp1 env store)))
+          (eopl:printf "~s~%" (expval->num val))))
+      
+      (block-statement (stmts)
+        (for-each
+         (lambda (stmt)
+           (result-of stmt env store))
+         stmts))
+      
+      (if-statement (exp1 stmt1 stmt2)
+        (if (expval->bool (value-of exp1 env store))
+            (result-of stmt1 env store)
+            (result-of stmt2 env store)))
+      
+      (while-statement (exp1 stmt1)
+        (if (expval->bool (value-of exp1 env store))
+            (begin
+              (result-of stmt1 env store)
+              (result-of (while-statement exp1 stmt1) env store))
+             (eopl:printf "while statement was done")))
+      ; 条件不成立，不修改store，仅打印已完成的提示，实际的编程语言里面，怎么处理不成立的这种情况呢？
+      (vars-statement (vars stmts)
+        ;设置默认初始值均为0
+        (letrec ((extend-vars-env
+                  (lambda (vars e-env)
+                    (if (null? vars)
+                        e-env
+                        (extend-vars-env (cdr vars) (extend-env (car vars) (newref store 0) env))))))
+          (let ((new-env (extend-vars-env vars env)))
+            (result-of stmts new-env store)))))))
+                
 
 
 ;;;;;;;;;;;;;;;; the interpreter ;;;;;;;;;;;;;;;;
 
   ;; value-of-program : Program -> ExpVal
-  (define value-of-program 
-    (lambda (pgm)
-      (initialize-store!)
-      (cases program pgm
-        (a-program (exp1)
-          (value-of exp1 (init-env))))))
+;  (define value-of-program 
+;    (lambda (pgm)
+;      (initialize-store!)
+;      (cases program pgm
+;        (a-program (exp1)
+;          (value-of exp1 (init-env))))))
 
   ;; value-of : Exp * Env -> ExpVal
   ;; Page: 118, 119
   (define value-of
-    (lambda (exp env)
+    (lambda (exp env store)
       (cases expression exp
 
         ;\commentbox{ (value-of (const-exp \n{}) \r) = \n{}}
@@ -66,24 +103,24 @@
           (let ((val (apply-env env var)))
             (if (expval? val)
                 val
-                (deref val))))
+                (deref store val))))
 
         ;\commentbox{\diffspec}
-        (diff-exp (exp1 exp2)
-          (let ((val2 (value-of exp2 env))
-                (val1 (value-of exp1 env)))
+        (oper-exp (oper exp1 exp2)
+          (let ((val2 (value-of exp2 env store))
+                (val1 (value-of exp1 env store)))
             (let ((num1 (expval->num val1))
                   (num2 (expval->num val2)))
               (newline)
-              (display "diff-exp")
+              (display "oper-exp")
               (newline)
               (display env)
               (num-val
-                (- num1 num2)))))
+                ((eval (string->symbol oper)) num1 num2)))))
 
         ;\commentbox{\zerotestspec}
         (zero?-exp (exp1)
-          (let ((val1 (value-of exp1 env)))
+          (let ((val1 (value-of exp1 env store)))
             (let ((num1 (expval->num val1)))
               (if (zero? num1)
                 (bool-val #t)
@@ -91,16 +128,16 @@
               
         ;\commentbox{\ma{\theifspec}}
         (if-exp (exp1 exp2 exp3)
-          (let ((val1 (value-of exp1 env)))
+          (let ((val1 (value-of exp1 env store)))
             (if (expval->bool val1)
               (value-of exp2 env)
               (value-of exp3 env))))
 
         ;\commentbox{\ma{\theletspecsplit}}
         (let-exp (var exp1 body)       
-          (let ((v1 (value-of exp1 env)))
+          (let ((v1 (value-of exp1 env store)))
             (value-of body
-              (extend-env var (newref v1) env))))
+              (extend-env var (newref store v1) env))))
 
 ;        (let-exp (var exp1 body)
 ;          (let ((v1 (value-of exp1 env)))
@@ -116,11 +153,11 @@
               (newline)
               (eopl:printf "call-exp ~s ~%" arg)
               (display env)
-              (apply-procedure proc arg)))
+              (apply-procedure proc arg store)))
         
         (letrec-exp (p-names b-vars p-bodies letrec-body)
           (value-of letrec-body
-            (extend-env-rec* p-names b-vars p-bodies env)))
+            (extend-env-rec* p-names b-vars p-bodies env store)))
         
         (begin-exp (exp1 exps)
           (letrec 
@@ -171,10 +208,10 @@
   
   ;; instrumented version
   (define apply-procedure
-    (lambda (proc1 arg)
+    (lambda (proc1 arg store)
       (cases proc proc1
         (procedure (var body saved-env)
-          (let ((r (newref arg)))
+          (let ((r (newref store arg)))
             (let ((new-env (extend-env var r saved-env)))
               (when (instrument-let)
                 (begin
