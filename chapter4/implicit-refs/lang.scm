@@ -45,6 +45,10 @@
       (statement
        ("var" (separated-list identifier ",") ";" statement)
        vars-statement)
+
+      (statement
+       ("read" identifier)
+       read-statement)
       
       (expression (number) const-exp)
       

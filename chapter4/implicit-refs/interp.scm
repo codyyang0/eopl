@@ -74,6 +74,10 @@
             (display new-env)
             (result-of stmts new-env))))
 
+      (read-statement (var)
+        (setref! (apply-env env var) (num-val (read)))
+        (eopl:printf "~s ~%" (deref (apply-env env var))))
+      
       )))
                 
 ;;;;;;;;;;;;;;;; the interpreter ;;;;;;;;;;;;;;;;
