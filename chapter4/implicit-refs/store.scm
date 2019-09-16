@@ -7,7 +7,6 @@
   
   (define instrument-newref (make-parameter #f))
 
-  
   ;;;;;;;;;;;;;;;; references and the store ;;;;;;;;;;;;;;;;
   
   ;;; world's dumbest model of the store:  the store is a list and a
@@ -44,10 +43,10 @@
   ;; newref : ExpVal -> Ref
   ;; Page: 111
   (define newref
-    (lambda (store val)
-      (let ((next-ref (length store)))
-        (set! store
-              (append store (list val)))
+    (lambda (val)
+      (let ((next-ref (length the-store)))
+        (set! the-store
+              (append the-store (list val)))
         (when (instrument-newref)
             (eopl:printf 
              "newref: allocating location ~s with initial contents ~s~%"
@@ -57,14 +56,14 @@
   ;; deref : Ref -> ExpVal
   ;; Page 111
   (define deref 
-    (lambda (store ref)
-      (list-ref store ref)))
+    (lambda (ref)
+      (list-ref the-store ref)))
 
   ;; setref! : Ref * ExpVal -> Unspecified
   ;; Page: 112
   (define setref!                       
-    (lambda (store ref val)
-      (set! store
+    (lambda (ref val)
+      (set! the-store
         (letrec
           ((setref-inner
              ;; returns a list like store1, except that position ref1
@@ -72,7 +71,7 @@
              (lambda (store1 ref1)
                (cond
                  ((null? store1)
-                  (report-invalid-reference ref store))
+                  (report-invalid-reference ref the-store))
                  ((zero? ref1)
                   (cons val (cdr store1)))
                  (else
@@ -80,7 +79,7 @@
                      (car store1)
                      (setref-inner
                        (cdr store1) (- ref1 1))))))))
-          (setref-inner store ref)))))
+          (setref-inner the-store ref)))))
 
   (define report-invalid-reference
     (lambda (ref the-store)

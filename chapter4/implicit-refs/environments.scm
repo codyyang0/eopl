@@ -3,7 +3,9 @@
   (require "data-structures.scm")
   (require "store.scm")
   (provide init-env empty-env extend-env apply-env)
-  
+
+
+
 ;;;;;;;;;;;;;;;; initial environment ;;;;;;;;;;;;;;;;
   
   ;; init-env : () -> Env
@@ -12,13 +14,13 @@
   ;; v is bound to a location containing the expressed value 5, and 
   ;; x is bound to a location containing the expressed value 10.  
   (define init-env 
-    (lambda (store)
+    (lambda ()
       (extend-env 
-        'i (newref store (num-val 1))
+        'i (newref (num-val 1))
         (extend-env
-          'v (newref store (num-val 5))
+          'v (newref (num-val 5))
           (extend-env
-            'x (newref store (num-val 10))
+            'x (newref (num-val 10))
             (empty-env))))))
 
 

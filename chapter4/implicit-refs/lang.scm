@@ -60,6 +60,10 @@
        ("if" expression "then" expression "else" expression)
        if-exp)
 
+      (expression
+       ("not" "(" expression ")")
+       not-exp)
+
       (expression (identifier) var-exp)
 
       (expression
@@ -71,7 +75,7 @@
 ;       letmutable-exp)
 
       (expression
-       ("proc" "(" identifier ")" expression)
+       ("proc" "(" (separated-list identifier ",") ")" expression)
        proc-exp)
 
       (expression
