@@ -1,4 +1,5 @@
 (module lang (lib "eopl.ss" "eopl")                
+
   
   ;; language for IMPLICIT-REFS
 
@@ -41,11 +42,15 @@
       (statement
        ("while" expression statement)
        while-statement)
-      
-      (statement
-       ("var" (separated-list identifier ",") ";" statement)
-       vars-statement)
 
+      (statement
+       ("do" statement "while" expression)
+       do-while-statement)
+            
+      (statement
+       ("var" (separated-list identifier ",") "=" (separated-list expression ",") ";" statement)
+       vars-statement)
+      
       (statement
        ("read" identifier)
        read-statement)

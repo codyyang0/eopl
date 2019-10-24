@@ -4,8 +4,6 @@
   (require "store.scm")
   (provide init-env empty-env extend-env apply-env)
 
-
-
 ;;;;;;;;;;;;;;;; initial environment ;;;;;;;;;;;;;;;;
   
   ;; init-env : () -> Env

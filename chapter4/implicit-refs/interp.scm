@@ -2,8 +2,8 @@
   
   ;; interpreter for the IMPLICIT-REFS language
 
+  
   (require "drscheme-init.scm")
-
   (require "lang.scm")
   (require "data-structures.scm")
   (require "environments.scm")
@@ -61,19 +61,24 @@
             (begin
               (result-of stmt1 env)
               (result-of (while-statement exp1 stmt1) env))
-             (eopl:printf "while statement was done")))
-      ; 条件不成立，不修改store，仅打印已完成的提示，实际的编程语言里面，怎么处理不成立的这种情况呢？
-      (vars-statement (vars stmts)
-        ;设置默认初始值均为0
+             (eopl:printf "~%")))
+
+      (do-while-statement (stmt1 exp1)
+        (begin
+          (result-of stmt1 env)
+          (if (expval->bool (value-of exp1 env))
+              (result-of (do-while-statement stmt1 exp1) env)
+              (eopl:printf "do-while statement was done"))))
+         
+      (vars-statement (vars exps stmts)
         (letrec ((extend-vars-env
-                  (lambda (vars e-env)
+                  (lambda (vars exps e-env)
                     (if (null? vars)
                         e-env
-                        (extend-vars-env (cdr vars) (extend-env (car vars) (newref (num-val 0)) e-env))))))
-          (let ((new-env (extend-vars-env vars env)))
-            (display new-env)
+                        (extend-vars-env (cdr vars) (cdr exps) (extend-env (car vars) (newref (value-of (car exps) env)) e-env))))))
+          (let ((new-env (extend-vars-env vars exps env)))
             (result-of stmts new-env))))
-
+      
       (read-statement (var)
         (setref! (apply-env env var) (num-val (read)))
         (eopl:printf "~s ~%" (deref (apply-env env var))))
@@ -101,11 +106,11 @@
 
         ;\commentbox{ (value-of (var-exp \x{}) \r) 
         ;              = (deref (apply-env \r \x{}))}
-        (var-exp (var)
-          (let ((val (apply-env env var)))
-            (if (expval? val)
-                val
-                (deref val))))
+        (var-exp (var) (deref (apply-env env var)))
+;          (let ((val (apply-env env var)))
+;            (if (expval? val)
+;                val
+;                (deref val))))
 
         ;\commentbox{\diffspec}
         (oper-exp (oper exp1 exp2)
